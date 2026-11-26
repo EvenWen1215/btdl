@@ -302,3 +302,47 @@ fn watch_later_list_and_selected_video_are_distinct() {
     );
     assert!(classify_input("https://example.com/list/watchlater").is_err());
 }
+
+#[test]
+fn classifies_douyin_work_pages_and_share_links() {
+    const AWEME: &str = "7709208428677229898";
+
+    for input in [
+        format!("https://www.douyin.com/video/{AWEME}"),
+        format!("https://www.douyin.com/video/{AWEME}?previous_page=app_code_link"),
+        format!("https://www.douyin.com/note/{AWEME}"),
+        format!("https://www.iesdouyin.com/share/video/{AWEME}/?region=CN&from_ssr=1"),
+        format!("https://www.iesdouyin.com/share/note/{AWEME}/"),
+        format!("https://www.douyin.com/discover?modal_id={AWEME}"),
+        format!("7.32 复制打开抖音，看看这条作品 https://www.douyin.com/video/{AWEME} 复制此链接"),
+    ] {
+        assert_eq!(
+            classify_input(&input).unwrap(),
+            ClassifiedInput::Douyin {
+                aweme_id: AWEME.into()
+            },
+            "{input}"
+        );
+    }
+
+    let classified = classify_input("https://v.douyin.com/G8Oggg_IXMA/").unwrap();
+    assert_eq!(
+        classified,
+        ClassifiedInput::DouyinShortUrl("https://v.douyin.com/G8Oggg_IXMA/".into())
+    );
+    assert_eq!(classified.source_kind(), SourceKind::Unknown);
+    assert!(classified.is_short_link());
+}
+
+#[test]
+fn douyin_work_ids_require_a_full_numeric_id() {
+    for input in [
+        "https://www.douyin.com/video/123",
+        "https://www.douyin.com/video/BV1xx411c7mD",
+        "https://www.douyin.com/user/MS4wLjABAAAA",
+        "https://www.douyin.com.evil.example/video/7709208428677229898",
+        "https://example.com/video/7709208428677229898",
+    ] {
+        assert!(classify_input(input).is_err(), "{input} should be rejected");
+    }
+}

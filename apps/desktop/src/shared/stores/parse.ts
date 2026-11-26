@@ -30,7 +30,7 @@ import { useQueueStore } from './queue'
 import { useSettingsStore } from './settings'
 import { useUiStore } from './ui'
 import { usePreparationsStore } from './preparations'
-import { isSingleVideoInput } from '../utils/bilibiliLinks'
+import { isSingleWorkInput } from '../utils/bilibiliLinks'
 import type { InlineNotice, NoticeTone } from './feedback'
 import { NOTICE_CLEAR_DELAY } from './feedback'
 import { buildBatchSelectionBySource, selectedBatchSourceIds, toggleBatchEntrySelection } from './parseBatch'
@@ -38,6 +38,9 @@ import { selectsWholePosts, selectableParts } from '../features/parse/parseResul
 
 const MAX_BATCH_SOURCES = 20
 const PARSE_CONCURRENCY = 1
+// Source kinds that resolve to exactly one downloadable work, so batching and
+// single-work mode can accept them without expanding a whole list.
+const SINGLE_WORK_SOURCE_KINDS = new Set(['video', 'douyin'])
 const PACED_PARSE_POLL_INTERVAL_MS = 100
 
 interface BackgroundParseJob {
@@ -235,8 +238,8 @@ export const useParseStore = defineStore('parse', {
         return false
       }
 
-      if (options.singleVideo && (inputs.length !== 1 || !isSingleVideoInput(inputs[0]))) {
-        this.setNotice('请输入一个视频链接或 BV / AV；合集、收藏夹等来源请切换到批量解析。', 'warning')
+      if (options.singleVideo && (inputs.length !== 1 || !isSingleWorkInput(inputs[0]))) {
+        this.setNotice('请输入一个视频或抖音作品链接（含 BV / AV）；合集、收藏夹等来源请切换到批量解析。', 'warning')
         return false
       }
 
@@ -270,7 +273,7 @@ export const useParseStore = defineStore('parse', {
         const validOutcomes: Array<(typeof outcomes)[number] & { tree: NormalizedSourceTree }> = []
         for (const outcome of outcomes) {
           if (!outcome.tree) continue
-          if ((batch || options.singleVideo) && outcome.tree.source.kind !== 'video') {
+          if ((batch || options.singleVideo) && !SINGLE_WORK_SOURCE_KINDS.has(outcome.tree.source.kind)) {
             failures.push({ ...outcome, tree: null, error: options.singleVideo ? '该链接不是单个视频，请切换到批量解析。' : '批量模式只支持视频链接' })
             continue
           }
@@ -1073,7 +1076,7 @@ const splitParseInputs = (input: string): string[] =>
   )
 
 const defaultSelection = (tree: NormalizedSourceTree): string[] =>
-  tree.source.kind === 'video' ? collectPartIds(tree) : []
+  tree.source.kind === 'video' || tree.source.kind === 'douyin' ? collectPartIds(tree) : []
 
 const partIdsForNode = (tree: NormalizedSourceTree, nodeId: string): string[] => {
   for (const group of tree.groups) {

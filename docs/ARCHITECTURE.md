@@ -16,6 +16,8 @@ BDL 按“领域真相在 Rust、会话交互在 Vue”的边界组织。跨边�
 | nfo      | NFO 字段模板、XML 渲染与校验          | 只使用任务快照；文本转义；缺失来源信息不推断                |
 | storage  | SQLite 任务、日志、账号摘要和完成记录 | 不存 Cookie；替换任务时保留日志；旧数据可向前读取             |
 
+抖音单条作品没有可匿名调用的签名接口，`resolver::douyin` 通过可配置的解析服务换取播放地址（`BDL_DOUYIN_API`，默认公共服务），并校验返回的作品 ID 与所选一致。抖音是单文件音视频流，`MediaStream.includes_audio` 让 planner 不再要求独立音频轨道，避免同一文件被下载两次。
+
 ### `bdl-tauri`
 
 | 模块              | 所有权                                   | 不变量                                              |

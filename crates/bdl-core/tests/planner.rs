@@ -51,6 +51,60 @@ fn missing_media_refresh_respects_the_recipe_and_audio_only_cache() {
 }
 
 #[test]
+fn muxed_single_file_sources_do_not_require_or_duplicate_an_audio_track() {
+    let mut tree = fixture_tree(false);
+    let id = PartId("part:BV1:100".into());
+    tree.groups[0].items[0].parts[0].streams[0].includes_audio = true;
+
+    let mut options = DownloadOptions::new(PathBuf::from("downloads"));
+    assert!(missing_required_media_parts(&tree, std::slice::from_ref(&id), &options).is_empty());
+    let tasks = plan_selected_parts(&tree, std::slice::from_ref(&id), &options).unwrap();
+    let resources = &tasks[0].resources;
+    assert_eq!(
+        resources
+            .iter()
+            .filter(|resource| resource.intent == DownloadResourceIntent::Video)
+            .count(),
+        1
+    );
+    assert!(
+        !resources
+            .iter()
+            .any(|resource| resource.intent == DownloadResourceIntent::Audio),
+        "a merge of a single-file source must not download the same file twice"
+    );
+
+    // Audio-only recipes take the single file and let FFmpeg extract the track.
+    options.media_mode = DownloadMediaMode::AudioOnly;
+    let tasks = plan_selected_parts(&tree, std::slice::from_ref(&id), &options).unwrap();
+    assert!(
+        tasks[0]
+            .resources
+            .iter()
+            .any(|resource| resource.intent == DownloadResourceIntent::Audio)
+    );
+    assert!(
+        !tasks[0]
+            .resources
+            .iter()
+            .any(|resource| resource.intent == DownloadResourceIntent::Video)
+    );
+
+    // A recipe that saves the audio separately downloads the muxed file again.
+    let mut workflow = bdl_core::workflow::DownloadWorkflow::default();
+    workflow.audio.save = true;
+    let mut options = DownloadOptions::new(PathBuf::from("downloads"));
+    workflow.apply(&mut options).unwrap();
+    let tasks = plan_selected_parts(&tree, std::slice::from_ref(&id), &options).unwrap();
+    assert!(
+        tasks[0]
+            .resources
+            .iter()
+            .any(|resource| resource.intent == DownloadResourceIntent::Audio)
+    );
+}
+
+#[test]
 fn custom_names_get_the_selected_workflow_container() {
     for container in ["mp4", "mkv"] {
         let mut options = DownloadOptions::new(PathBuf::from("downloads"));
@@ -876,6 +930,7 @@ fn fixture_tree(include_audio: bool) -> NormalizedSourceTree {
             value: "https://www.bilibili.com/".to_owned(),
         }],
         acquired_at: Utc::now(),
+        includes_audio: false,
     }];
 
     if include_audio {
@@ -891,6 +946,7 @@ fn fixture_tree(include_audio: bool) -> NormalizedSourceTree {
                 value: "https://www.bilibili.com/".to_owned(),
             }],
             acquired_at: Utc::now(),
+            includes_audio: false,
         });
     }
 
@@ -968,6 +1024,7 @@ fn media_stream(
             value: "https://www.bilibili.com/".to_owned(),
         }],
         acquired_at: Utc::now(),
+        includes_audio: false,
     }
 }
 

@@ -4,7 +4,7 @@ import MobileListCard from '../MobileListCard.vue';
 import MobileSheet from '../MobileSheet.vue';
 import UiButton from '../../../shared/ui/Button.vue';
 import ExternalLinkButton from '../../../shared/ui/ExternalLinkButton.vue';
-import { bilibiliVideoUrl } from '../../../shared/utils/bilibiliLinks';
+import { sourceVideoUrl } from '../../../shared/utils/bilibiliLinks';
 import { displayPartDuration, formatDuration } from '../../../shared/utils/duration';
 import { computed, ref } from 'vue';
 import type { NormalizedSourceTree } from '../../../shared/api/dto';
@@ -35,7 +35,7 @@ const entries = computed(() => {
             [
               part.id,
               {
-                url: bilibiliVideoUrl(item),
+                url: sourceVideoUrl(item),
                 cover: item.cover_url,
                 duration: wholePosts ? item.duration_seconds : displayPartDuration(part.duration_seconds, item.duration_seconds, item.parts.length),
                 index: !wholePosts && item.parts.length > 1 ? `P${index + 1}` : '',

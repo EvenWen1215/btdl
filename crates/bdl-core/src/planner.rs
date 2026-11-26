@@ -407,11 +407,10 @@ pub fn missing_required_media_parts(
                         .iter()
                         .any(|s| s.kind == MediaKind::Video))
                     || (options.media_mode.includes_audio()
-                        && !selected
-                            .part
-                            .streams
-                            .iter()
-                            .any(|s| s.kind == MediaKind::Audio))
+                        && !selected.part.streams.iter().any(|s| {
+                            s.kind == MediaKind::Audio
+                                || (s.kind == MediaKind::Video && s.includes_audio)
+                        }))
             })
         })
         .cloned()
@@ -501,7 +500,7 @@ pub fn estimate_selected_parts_download_size(
                     &mut estimated_bytes,
                     &mut unknown_streams,
                 );
-            } else {
+            } else if muxed_video_stream(selected.part).is_none() {
                 unknown_streams += 1;
             }
         }
@@ -591,7 +590,16 @@ fn plan_part(
         None
     };
     let audio = if options.media_mode.includes_audio() {
-        Some(select_audio_stream(part, options)?)
+        match muxed_video_stream(part) {
+            // A single-file work has no separate track: audio-only tasks take
+            // the file itself and let FFmpeg extract the track.
+            Some(stream) if !options.media_mode.includes_video() => Some(stream),
+            // Merging must not download the same file twice unless the recipe
+            // explicitly asks for a standalone audio output.
+            Some(_) if !wants_separate_audio_output(options) => None,
+            Some(stream) => Some(stream),
+            None => Some(select_audio_stream(part, options)?),
+        }
     } else {
         None
     };
@@ -1076,6 +1084,25 @@ fn streams_by_kind(part: &NormalizedPart, kind: MediaKind) -> Vec<&MediaStream> 
         .collect()
 }
 
+/// Single-file platforms deliver one video stream that already carries audio.
+fn muxed_video_stream(part: &NormalizedPart) -> Option<&MediaStream> {
+    part.streams
+        .iter()
+        .find(|stream| stream.kind == MediaKind::Video && stream.includes_audio)
+}
+
+/// A separate audio file is only produced when the recipe asks for it, so a
+/// plain merge of a single-file source does not download the same bytes twice.
+fn wants_separate_audio_output(options: &DownloadOptions) -> bool {
+    options
+        .workflow
+        .as_ref()
+        .is_some_and(|workflow| workflow.audio.save || workflow.audio.retain_original)
+        || options
+            .processing
+            .is_some_and(|processing| processing.retain_raw_streams)
+}
+
 fn select_stream_by_quality<'a>(
     streams: Vec<&'a MediaStream>,
     preference: StreamPreference,
@@ -1203,6 +1230,9 @@ fn media_refresh_intent(
             .or_else(|| video_refresh_intent(part, page_number)),
         SourceKind::Cheese => episode_refresh_intent(part, "cheese")
             .or_else(|| video_refresh_intent(part, page_number)),
+        // Douyin works are refreshed by re-parsing their share link; the CDN
+        // address is not addressable from a CID.
+        SourceKind::Douyin => None,
         SourceKind::Video
         | SourceKind::WatchLater
         | SourceKind::Favorite

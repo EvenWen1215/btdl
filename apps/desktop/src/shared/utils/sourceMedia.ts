@@ -22,11 +22,14 @@ export function sourceMediaByPart(tree: NormalizedSourceTree, fallbackOwner?: st
           const page = index + 1;
           const video = part.bvid ? part.bvid : part.aid ? `av${part.aid}` : null;
           const episode = part.id.match(/^part:(bangumi|cheese):.*:(\d+):\d+$/);
-          const url = episode
-            ? `https://www.bilibili.com/${episode[1]}/play/ep${episode[2]}`
-            : video
-              ? `https://www.bilibili.com/video/${video}${!wholePost && item.parts.length > 1 ? `?p=${page}` : ''}`
-              : null;
+          const douyin = part.id.match(/^part:douyin:(\d+)$/);
+          const url = douyin
+            ? `https://www.douyin.com/video/${douyin[1]}`
+            : episode
+              ? `https://www.bilibili.com/${episode[1]}/play/ep${episode[2]}`
+              : video
+                ? `https://www.bilibili.com/video/${video}${!wholePost && item.parts.length > 1 ? `?p=${page}` : ''}`
+                : null;
           return [
             part.id,
             {

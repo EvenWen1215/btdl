@@ -1,6 +1,7 @@
 pub mod bangumi;
 pub mod cheese;
 pub mod collection;
+pub mod douyin;
 pub mod favorite;
 pub mod http_guard;
 pub mod pacing;
@@ -31,6 +32,7 @@ pub trait Resolver {
     ) -> BdlResult<NormalizedSourceTree>;
 }
 
+/// Format a platform upload timestamp as a China Standard Time calendar date.
 pub(crate) fn bilibili_publish_date(timestamp: u64) -> Option<String> {
     if timestamp == 0 {
         return None;

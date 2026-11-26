@@ -131,6 +131,7 @@ fn command_error_code(error: &BdlError) -> &'static str {
             }
         }
         BdlError::Fetch { .. } => "download_error",
+        BdlError::SourceService { .. } => "source_service_error",
         BdlError::Platform { .. } => "platform_error",
         _ => "core_error",
     }
@@ -160,6 +161,7 @@ fn command_error_message(error: &BdlError) -> Option<String> {
         ),
         BdlError::Bpi(_) => Some("操作失败，暂时无法获取 Bilibili 数据，请稍后重试。".to_owned()),
         BdlError::Fetch { .. } => Some("下载失败，请查看错误详情。".into()),
+        BdlError::SourceService { message } => Some(message.clone()),
         BdlError::Platform { message } => Some(message.clone()),
         _ => None,
     }
@@ -1622,6 +1624,10 @@ fn is_allowed_external_url(value: &str) -> bool {
             "bilibili.com"
                 | "www.bilibili.com"
                 | "space.bilibili.com"
+                | "douyin.com"
+                | "www.douyin.com"
+                | "v.douyin.com"
+                | "www.iesdouyin.com"
                 | "github.com"
                 | "www.yuelili.com"
                 | "apps.yuelili.com"
@@ -3175,6 +3181,9 @@ mod tests {
         ));
         assert!(is_allowed_external_url(
             "https://space.bilibili.com/4279370"
+        ));
+        assert!(is_allowed_external_url(
+            "https://www.douyin.com/video/7709208428677229898"
         ));
         assert!(is_allowed_external_url("https://github.com/Yuelioi/bdl"));
         assert!(is_allowed_external_url(

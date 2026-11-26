@@ -440,6 +440,21 @@ fn hydration_input_for_part(
                 raw_url: format!("https://www.bilibili.com/cheese/play/ep{ep_id}"),
             })
         }
+        SourceKind::Douyin => {
+            let aweme_id = part_id
+                .0
+                .strip_prefix("part:douyin:")
+                .filter(|id| !id.is_empty())
+                .ok_or_else(|| BdlError::Planning {
+                    message: format!(
+                        "选中的作品 `{}` 缺少抖音作品 ID，无法补齐下载流。",
+                        part_id.0
+                    ),
+                })?;
+            Ok(ClassifiedInput::Douyin {
+                aweme_id: aweme_id.to_owned(),
+            })
+        }
         _ => part
             .bvid
             .clone()
@@ -555,6 +570,7 @@ fn source_kind_name(kind: SourceKind) -> &'static str {
         SourceKind::Collection => "collection",
         SourceKind::Series => "series",
         SourceKind::Uploader => "uploader",
+        SourceKind::Douyin => "douyin",
         SourceKind::Unknown => "unknown",
     }
 }

@@ -24,6 +24,7 @@ use bdl_core::queue::{
 use bdl_core::resolver::bangumi::BangumiResolver;
 use bdl_core::resolver::cheese::CheeseResolver;
 use bdl_core::resolver::collection::{CollectionResolver, SeriesResolver};
+use bdl_core::resolver::douyin::DouyinResolver;
 use bdl_core::resolver::favorite::FavoriteResolver;
 use bdl_core::resolver::paged::PageRequest;
 use bdl_core::resolver::source::SourceResolver;
@@ -285,7 +286,8 @@ impl AppState {
                         // Dispatch the resolved identity so video collection expansion and
                         // paged sources behave exactly like their full URLs.
                         let classified = match classified {
-                            ClassifiedInput::ShortUrl(url) => {
+                            ClassifiedInput::ShortUrl(url)
+                            | ClassifiedInput::DouyinShortUrl(url) => {
                                 SourceResolver::from_bpi_client(self.shared_resolver_client()?)
                                     .expand_short_url(&url)
                                     .await?
@@ -361,6 +363,9 @@ impl AppState {
                             }
                             SourceKind::Cheese => {
                                 self.cheese_resolver()?.resolve(classified, options).await?
+                            }
+                            SourceKind::Douyin => {
+                                self.douyin_resolver()?.resolve(classified, options).await?
                             }
                             _ => self.video_resolver()?.resolve(classified, options).await?,
                         };
@@ -891,6 +896,41 @@ impl AppState {
     ) -> BdlResult<DownloadTask> {
         let task = self.task_snapshot(task_id)?;
         let account_revision = self.account_revision();
+        // Douyin works have no CID and expose one self-contained stream, so the
+        // CID-driven refresh below cannot address them.
+        if let Some(aweme_id) = task.source_id.strip_prefix("douyin:") {
+            let refreshed = self
+                .resolve_media_input_with_streams(
+                    ClassifiedInput::Douyin {
+                        aweme_id: aweme_id.to_owned(),
+                    },
+                    None,
+                    cooldown,
+                )
+                .await?;
+            let part = refreshed
+                .groups
+                .iter()
+                .flat_map(|group| &group.items)
+                .flat_map(|item| &item.parts)
+                .next()
+                .ok_or_else(|| BdlError::Planning {
+                    message: "刷新下载地址失败：抖音解析结果为空。".to_owned(),
+                })?;
+            let stream = select_task_stream(
+                part,
+                MediaKind::Video,
+                &task.media_selection.video_quality,
+                Some(&task.media_selection.video_codec),
+                task.media_selection.video_bandwidth,
+            )
+            .or_else(|| select_task_stream(part, MediaKind::Video, "best", None, None))
+            .ok_or_else(|| BdlError::Planning {
+                message: format!("刷新下载地址失败：`{}` 缺少视频流。", part.title),
+            })?;
+            self.check_account_revision(account_revision)?;
+            return self.replace_task_media_urls(task_id, Some(stream), Some(stream));
+        }
         let needs_audio = task.resources.iter().any(|resource| {
             resource.intent == DownloadResourceIntent::Audio
                 && resource.status != ResourceStatus::Completed
@@ -1862,6 +1902,10 @@ impl AppState {
         ))
     }
 
+    fn douyin_resolver(&self) -> BdlResult<DouyinResolver> {
+        DouyinResolver::new()
+    }
+
     fn account_cookie(&self) -> BdlResult<Option<String>> {
         let revision = self.account_session_revision.load(Ordering::SeqCst);
         {
@@ -2202,6 +2246,7 @@ fn source_kind_name(kind: SourceKind) -> &'static str {
         SourceKind::Collection => "collection",
         SourceKind::Series => "series",
         SourceKind::Uploader => "uploader",
+        SourceKind::Douyin => "douyin",
         SourceKind::Unknown => "unknown",
     }
 }
@@ -3663,6 +3708,7 @@ mod tests {
                 value: "https://www.bilibili.com".to_owned(),
             }],
             acquired_at: Utc::now(),
+            includes_audio: false,
         }
     }
 

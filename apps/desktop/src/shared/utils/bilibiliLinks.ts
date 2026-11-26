@@ -14,7 +14,32 @@ const isBilibiliHost = (host: string): boolean => {
   )
 }
 
-export const extractBilibiliInputs = (text: string): string[] => {
+const isDouyinHost = (host: string): boolean => {
+  const normalized = host.toLowerCase()
+  return (
+    normalized === 'douyin.com' ||
+    normalized.endsWith('.douyin.com') ||
+    normalized === 'iesdouyin.com' ||
+    normalized.endsWith('.iesdouyin.com')
+  )
+}
+
+const isShareSourceHost = (host: string): boolean => isBilibiliHost(host) || isDouyinHost(host)
+
+const DOUYIN_WORK_PATH = /^\/(?:share\/)?(?:video|note|slides)\/(\d{15,20})\/?$/i
+const DOUYIN_SHORT_PATH = /^\/[A-Za-z0-9_-]+\/?$/
+
+const douyinWorkId = (url: URL): string | null => {
+  const fromPath = url.pathname.match(DOUYIN_WORK_PATH)?.[1]
+  if (fromPath) return fromPath
+  for (const key of ['modal_id', 'aweme_id', 'item_id', 'vid']) {
+    const value = url.searchParams.get(key)
+    if (value && /^\d{15,20}$/.test(value)) return value
+  }
+  return null
+}
+
+export const extractSourceInputs = (text: string): string[] => {
   const candidates: Array<{ index: number; value: string }> = []
   const urlRanges: Array<{ start: number; end: number }> = []
 
@@ -25,7 +50,7 @@ export const extractBilibiliInputs = (text: string): string[] => {
     const candidate = raw.replace(TRAILING_SHARE_PUNCTUATION, '')
     try {
       const url = new URL(candidate)
-      if (isBilibiliHost(url.hostname)) candidates.push({ index, value: candidate })
+      if (isShareSourceHost(url.hostname)) candidates.push({ index, value: candidate })
     } catch {
       // Ignore malformed URL-like text and let normal input validation handle the rest.
     }
@@ -48,14 +73,17 @@ export const extractBilibiliInputs = (text: string): string[] => {
   return Array.from(new Set(candidates.map((candidate) => candidate.value)))
 }
 
-export const isSingleVideoInput = (input: string): boolean => {
+export const isSingleWorkInput = (input: string): boolean => {
   const value = input.trim()
   if (/^(BV[0-9A-Za-z]{10}|av\d+)$/i.test(value)) return true
   try {
     const url = new URL(value)
     if (!['http:', 'https:'].includes(url.protocol)) return false
-    if (['b23.tv', 'www.b23.tv'].includes(url.hostname)) return url.pathname.length > 1
-    return ['bilibili.com', 'www.bilibili.com', 'm.bilibili.com'].includes(url.hostname)
+    const host = url.hostname.toLowerCase()
+    if (host === 'v.douyin.com') return DOUYIN_SHORT_PATH.test(url.pathname)
+    if (isDouyinHost(host)) return douyinWorkId(url) !== null
+    if (['b23.tv', 'www.b23.tv'].includes(host)) return url.pathname.length > 1
+    return ['bilibili.com', 'www.bilibili.com', 'm.bilibili.com'].includes(host)
       && (/^\/video\/(BV[0-9A-Za-z]{10}|av\d+)\/?$/i.test(url.pathname)
         || (/^\/(list\/)?watchlater\/?$/.test(url.pathname) && /^BV[0-9A-Za-z]{10}$/i.test(url.searchParams.get('bvid') ?? '')))
   } catch {
@@ -77,7 +105,11 @@ export const bilibiliFavoriteCategoryUrl = (
   return `${profileUrl}/favlist?ftype=${kind === 'created_favorite' ? 'create' : 'collect'}`
 }
 
-export const bilibiliVideoUrl = (item: NormalizedItem): string | null => {
+export const sourceVideoUrl = (item: NormalizedItem): string | null => {
+  for (const part of item.parts) {
+    const douyin = part.id.match(/^part:douyin:(\d+)$/)
+    if (douyin) return `https://www.douyin.com/video/${douyin[1]}`
+  }
   const part = item.parts.find((candidate) => candidate.bvid || candidate.aid)
   if (part?.bvid) return `https://www.bilibili.com/video/${part.bvid}`
   if (part?.aid) return `https://www.bilibili.com/video/av${part.aid}`
@@ -85,6 +117,9 @@ export const bilibiliVideoUrl = (item: NormalizedItem): string | null => {
 }
 
 export const bilibiliTaskUrl = (task: DownloadTask): string | null => {
+  const douyin = task.source_id.match(/^douyin:(\d+)$/)
+  if (douyin) return `https://www.douyin.com/video/${douyin[1]}`
+
   const input = task.refresh_intent?.input
   const page = task.refresh_intent?.page_number
   const pageQuery = page && page > 1 ? `?p=${page}` : ''

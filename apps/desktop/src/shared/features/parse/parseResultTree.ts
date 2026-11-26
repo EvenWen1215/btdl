@@ -25,6 +25,7 @@ export const sourceKindLabels: Record<SourceKind, string> = {
   collection: '合集',
   series: '系列',
   uploader: 'UP 主',
+  douyin: '抖音',
   unknown: '未知',
 }
 

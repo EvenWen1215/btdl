@@ -3,7 +3,7 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useSettingsStore } from '../stores/settings';
 import { useClipboardStore } from '../stores/clipboard';
 import { useUiStore } from '../stores/ui';
-import { extractBilibiliInputs } from '../utils/bilibiliLinks';
+import { extractSourceInputs } from '../utils/bilibiliLinks';
 import { readClipboardText } from '../utils/clipboard';
 import UiDialog from './Dialog.vue';
 import UiButton from './Button.vue';
@@ -23,7 +23,7 @@ async function check() {
   try {
     const text = await readClipboardText();
     if (disposed || request !== generation || document.visibilityState !== 'visible' || !document.hasFocus()) return;
-    const found = extractBilibiliInputs(text).filter((link) => !seen.has(link));
+    const found = extractSourceInputs(text).filter((link) => !seen.has(link));
     if (!found.length) return;
     found.forEach((link) => seen.add(link));
     while (seen.size > 200) seen.delete(seen.values().next().value!);

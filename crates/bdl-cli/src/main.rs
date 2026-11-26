@@ -587,7 +587,10 @@ async fn hydrate_part(
     part_id: &PartId,
 ) -> anyhow::Result<()> {
     let item_id = tree.groups[g].items[i].id.clone();
-    if matches!(tree.source.kind, SourceKind::Bangumi | SourceKind::Cheese) {
+    if matches!(
+        tree.source.kind,
+        SourceKind::Bangumi | SourceKind::Cheese | SourceKind::Douyin
+    ) {
         resolver.hydrate_item(tree, &item_id).await?;
     } else {
         let part = tree.groups[g].items[i]

@@ -13,6 +13,7 @@ use crate::resolver::cheese::CheeseResolver;
 use crate::resolver::collection::{
     CollectionResolver, SeriesResolver, collection_ids_from_url, series_ids_from_url,
 };
+use crate::resolver::douyin::DouyinResolver;
 use crate::resolver::favorite::{FavoriteResolver, favorite_media_id_from_url};
 use crate::resolver::paged::{PageRequest, append_source_page};
 use crate::resolver::uploader::UploaderResolver;
@@ -227,8 +228,13 @@ impl SourceResolver {
         input: ClassifiedInput,
         options: ResolveOptions,
     ) -> BdlResult<NormalizedSourceTree> {
-        let input = if let ClassifiedInput::ShortUrl(url) = input {
-            self.expand_short_url(&url).await?
+        let input = if input.is_short_link() {
+            match input {
+                ClassifiedInput::ShortUrl(url) | ClassifiedInput::DouyinShortUrl(url) => {
+                    self.expand_short_url(&url).await?
+                }
+                other => other,
+            }
         } else {
             input
         };
@@ -309,6 +315,7 @@ impl SourceResolver {
                     .resolve(input, options)
                     .await
             }
+            SourceKind::Douyin => DouyinResolver::new()?.resolve(input, options).await,
             SourceKind::Unknown => {
                 VideoResolver::from_bpi_client(self.client.clone())
                     .resolve(input, options)
@@ -343,14 +350,16 @@ impl SourceResolver {
         let mut url = url::Url::parse(input).map_err(|_| source_error("invalid short link"))?;
         url.set_scheme("https")
             .map_err(|_| source_error("invalid short link scheme"))?;
+        let site = ShortLinkSite::from_host(url.host_str().unwrap_or_default())
+            .ok_or_else(|| source_error("unsupported short link host"))?;
         for _ in 0..5 {
-            validate_redirect_target(&url)?;
+            validate_redirect_target(&url, site)?;
             if let Ok(classified) = classify_input(url.as_str())
-                && !matches!(classified, ClassifiedInput::ShortUrl(_))
+                && !classified.is_short_link()
             {
                 return Ok(classified);
             }
-            if !matches!(url.host_str(), Some("b23.tv" | "www.b23.tv")) {
+            if !site.is_short_host(url.host_str().unwrap_or_default()) {
                 return Err(source_error(
                     "short link did not resolve to a supported source",
                 ));
@@ -389,35 +398,82 @@ impl SourceResolver {
                 .join(location)
                 .map_err(|_| source_error("invalid redirect URL"))?;
         }
-        validate_redirect_target(&url)?;
+        validate_redirect_target(&url, site)?;
         let classified = classify_input(url.as_str())?;
-        if matches!(classified, ClassifiedInput::ShortUrl(_)) {
+        if classified.is_short_link() {
             return Err(source_error("short link exceeded five redirects"));
         }
         Ok(classified)
     }
 }
 
-fn validate_redirect_target(url: &url::Url) -> BdlResult<()> {
-    if url.scheme() != "https"
-        || !url.username().is_empty()
-        || url.password().is_some()
-        || url.port_or_known_default() != Some(443)
-        || !matches!(
-            url.host_str(),
-            Some(
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ShortLinkSite {
+    Bilibili,
+    Douyin,
+}
+
+impl ShortLinkSite {
+    fn from_host(host: &str) -> Option<Self> {
+        if host == "b23.tv" || host.ends_with(".b23.tv") {
+            Some(Self::Bilibili)
+        } else if host == "v.douyin.com" || host.ends_with(".v.douyin.com") {
+            Some(Self::Douyin)
+        } else {
+            None
+        }
+    }
+
+    /// Only the platform's own share host is expected to answer with another hop.
+    fn is_short_host(self, host: &str) -> bool {
+        match self {
+            Self::Bilibili => matches!(host, "b23.tv" | "www.b23.tv"),
+            Self::Douyin => host == "v.douyin.com" || host.ends_with(".v.douyin.com"),
+        }
+    }
+
+    /// Hosts a share link may jump to. Everything else is rejected before the
+    /// request is sent so a tampered link cannot bounce through other sites.
+    fn allows(self, host: &str) -> bool {
+        match self {
+            Self::Bilibili => matches!(
+                host,
                 "b23.tv"
                     | "www.b23.tv"
                     | "bilibili.com"
                     | "www.bilibili.com"
                     | "m.bilibili.com"
                     | "space.bilibili.com"
-            )
-        )
+            ),
+            Self::Douyin => {
+                host == "douyin.com"
+                    || host.ends_with(".douyin.com")
+                    || host == "iesdouyin.com"
+                    || host.ends_with(".iesdouyin.com")
+            }
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Bilibili => "Bilibili",
+            Self::Douyin => "Douyin",
+        }
+    }
+}
+
+fn validate_redirect_target(url: &url::Url, site: ShortLinkSite) -> BdlResult<()> {
+    let host = url.host_str().unwrap_or_default();
+    if url.scheme() != "https"
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.port_or_known_default() != Some(443)
+        || !site.allows(host)
     {
-        return Err(source_error(
-            "short link redirected outside supported Bilibili HTTPS hosts",
-        ));
+        return Err(source_error(&format!(
+            "short link redirected outside supported {} HTTPS hosts",
+            site.label()
+        )));
     }
     Ok(())
 }
@@ -433,6 +489,15 @@ fn item_media_input(kind: SourceKind, item: &NormalizedItem) -> BdlResult<String
         .parts
         .first()
         .ok_or_else(|| source_error("item has no parts"))?;
+    if kind == SourceKind::Douyin {
+        let aweme_id = part
+            .id
+            .0
+            .strip_prefix("part:douyin:")
+            .filter(|id| !id.is_empty())
+            .ok_or_else(|| source_error("Douyin item has no work ID"))?;
+        return Ok(crate::resolver::douyin::canonical_work_url(aweme_id));
+    }
     if matches!(kind, SourceKind::Bangumi | SourceKind::Cheese) {
         let prefix = if kind == SourceKind::Bangumi {
             "bangumi"
@@ -473,7 +538,10 @@ fn merge_item_parts(
     kind: SourceKind,
     require_streams: bool,
 ) -> BdlResult<()> {
-    let is_episode = matches!(kind, SourceKind::Bangumi | SourceKind::Cheese);
+    let matches_by_part_id = matches!(
+        kind,
+        SourceKind::Bangumi | SourceKind::Cheese | SourceKind::Douyin
+    );
     let part = item
         .parts
         .first()
@@ -484,7 +552,7 @@ fn merge_item_parts(
         .flat_map(|group| group.items)
         .find(|candidate| {
             candidate.parts.iter().any(|candidate_part| {
-                if is_episode {
+                if matches_by_part_id {
                     candidate_part.id == part.id
                 } else {
                     part.bvid
@@ -525,7 +593,8 @@ mod tests {
             "https://b23.tv/abc",
             "https://space.bilibili.com/123",
         ] {
-            validate_redirect_target(&url::Url::parse(target).unwrap()).unwrap();
+            validate_redirect_target(&url::Url::parse(target).unwrap(), ShortLinkSite::Bilibili)
+                .unwrap();
         }
         for target in [
             "http://www.bilibili.com/video/x",
@@ -533,8 +602,33 @@ mod tests {
             "https://user:secret@b23.tv/abc",
             "https://b23.tv:444/abc",
             "https://127.0.0.1/x",
+            "https://v.douyin.com/abc/",
         ] {
-            assert!(validate_redirect_target(&url::Url::parse(target).unwrap()).is_err());
+            assert!(
+                validate_redirect_target(
+                    &url::Url::parse(target).unwrap(),
+                    ShortLinkSite::Bilibili
+                )
+                .is_err()
+            );
+        }
+        for target in [
+            "https://v.douyin.com/G8Oggg_IXMA/",
+            "https://www.iesdouyin.com/share/video/7709208428677229898/",
+        ] {
+            validate_redirect_target(&url::Url::parse(target).unwrap(), ShortLinkSite::Douyin)
+                .unwrap();
+        }
+        for target in [
+            "http://v.douyin.com/G8Oggg_IXMA/",
+            "https://www.douyin.com.evil.example/x",
+            "https://douyin.com:8443/x",
+            "https://www.bilibili.com/video/BV1ZA411g7Sb",
+        ] {
+            assert!(
+                validate_redirect_target(&url::Url::parse(target).unwrap(), ShortLinkSite::Douyin)
+                    .is_err()
+            );
         }
     }
 

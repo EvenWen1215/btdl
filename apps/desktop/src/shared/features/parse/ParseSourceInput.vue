@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import UiButton from '../../ui/Button.vue';
-import { extractBilibiliInputs } from '../../utils/bilibiliLinks';
+import { extractSourceInputs } from '../../utils/bilibiliLinks';
 
 const mode = defineModel<'single' | 'batch'>('mode', { required: true });
 const input = defineModel<string>('input', { required: true });
@@ -32,7 +32,7 @@ const paste = (event: ClipboardEvent) => {
   const text = event.clipboardData?.getData('text/plain') ?? '';
   if (!text.includes('\n')) return;
   event.preventDefault();
-  const links = extractBilibiliInputs(text);
+  const links = extractSourceInputs(text);
   input.value = links.length ? links.join('\n') : text;
   multiline.value = input.value.includes('\n');
 };
@@ -49,7 +49,7 @@ const paste = (event: ClipboardEvent) => {
       v-if="mode === 'batch' && multiline"
       v-model="value"
       class="source-input-control"
-      aria-label="Bilibili 链接或 BV / AV"
+      aria-label="B站或抖音链接、BV / AV"
       placeholder="链接 / BV / AV，每行一个来源"
       :rows="3"
       :disabled="busy"
@@ -64,8 +64,8 @@ const paste = (event: ClipboardEvent) => {
       v-model="value"
       class="source-input-control"
       type="text"
-      :aria-label="mode === 'single' ? '视频链接或 BV / AV' : 'Bilibili 链接或 BV / AV'"
-      :placeholder="mobile ? 'Bilibili 链接或 BV / AV' : '粘贴 Bilibili 链接 / BV / AV'"
+      :aria-label="mode === 'single' ? '视频链接或 BV / AV' : 'B站或抖音链接、BV / AV'"
+      :placeholder="mobile ? 'B站或抖音链接' : '粘贴 B站 / 抖音链接或 BV / AV'"
       icon="i-tabler-link"
       :disabled="busy"
       color="neutral"

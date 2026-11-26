@@ -14,6 +14,7 @@ pub enum SourceKind {
     Collection,
     Series,
     Uploader,
+    Douyin,
     Unknown,
 }
 
@@ -101,6 +102,10 @@ pub struct MediaStream {
     pub urls: Vec<String>,
     pub headers: Vec<HeaderPair>,
     pub acquired_at: DateTime<Utc>,
+    /// True when this video stream already contains its audio track, as with
+    /// single-file platforms. Planning must not require a separate audio stream.
+    #[serde(default)]
+    pub includes_audio: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -149,6 +154,9 @@ impl StreamCodec {
             || lower.starts_with("dvhe")
             || lower.starts_with("dvh1")
         {
+            Self::Hevc
+        } else if lower.starts_with("bytevc1") {
+            // Douyin labels its H.265 renderings this way.
             Self::Hevc
         } else if lower.contains("avc") || lower.contains("h264") {
             Self::Avc

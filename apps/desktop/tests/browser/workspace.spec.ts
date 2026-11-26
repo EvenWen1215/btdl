@@ -684,7 +684,7 @@ test('mobile shell keeps navigation and downloads usable without desktop steps',
   await expect(page.locator('.mobile-header')).toBeVisible();
   await expect(page.locator('.mobile-header .account-button')).toHaveCount(0);
   await expect(page.locator('.mobile-header').getByRole('button')).toHaveCount(0);
-  await page.getByLabel('Bilibili 链接或 BV / AV').fill('favorite:fixture');
+  await page.getByLabel('B站或抖音链接、BV / AV').fill('favorite:fixture');
   await page.getByRole('button', { name: '开始解析' }).click();
   const results = page.getByRole('list', { name: '解析结果' });
   await expect(results).toBeVisible();
@@ -761,7 +761,7 @@ test.describe('adaptive Android workspace', () => {
         };
       });
       await page.goto('/');
-      await page.getByLabel('Bilibili 链接或 BV / AV').fill('favorite:fixture');
+      await page.getByLabel('B站或抖音链接、BV / AV').fill('favorite:fixture');
       await page.getByRole('button', { name: '开始解析' }).click();
       const results = page.getByRole('list', { name: '解析结果' });
       await expect(results.getByRole('checkbox')).toHaveCount(40);
@@ -883,7 +883,7 @@ for (const theme of ['light', 'dark'] as const) {
       };
     });
     await page.goto('/');
-    await page.getByLabel('Bilibili 链接或 BV / AV').fill('favorite:fixture');
+    await page.getByLabel('B站或抖音链接、BV / AV').fill('favorite:fixture');
     await page.getByRole('button', { name: '开始解析' }).click();
     await page
       .getByRole('list', { name: '解析结果' })
@@ -1269,7 +1269,7 @@ test('mobile batch selection and removal keep the download action reachable', as
   await installTauriMock(page, 'light', true, true);
   await page.goto('/');
   await page.getByRole('button', { name: '多行输入', exact: true }).click();
-  await page.getByLabel('Bilibili 链接或 BV / AV').fill('BV1xx411c7mD\nBV1xx411c7mE');
+  await page.getByLabel('B站或抖音链接、BV / AV').fill('BV1xx411c7mD\nBV1xx411c7mE');
   await page.getByRole('button', { name: '开始解析' }).click();
   const list = page.getByRole('list', { name: '批量解析结果' });
   await expect(list.getByRole('listitem')).toHaveCount(2);
@@ -1397,7 +1397,7 @@ test('parse source can be submitted with Ctrl+Enter', async ({ page }) => {
   await installTauriMock(page, 'light');
   await page.goto('/');
 
-  const input = page.getByLabel('Bilibili 链接或 BV / AV');
+  const input = page.getByLabel('B站或抖音链接、BV / AV');
   await input.fill('BV1xx411c7mD');
   await input.press('Control+Enter');
 
@@ -1577,7 +1577,7 @@ test('saved defaults download directly and reuse startup environment health', as
 test('parse result checkbox controls download selection', async ({ page }) => {
   await installTauriMock(page, 'light');
   await page.goto('/');
-  await page.getByLabel('Bilibili 链接或 BV / AV').fill('BV1xx411c7mD');
+  await page.getByLabel('B站或抖音链接、BV / AV').fill('BV1xx411c7mD');
   await page.getByRole('button', { name: '开始解析' }).click();
 
   const results = page.getByRole('list', { name: '解析结果' });
@@ -1603,7 +1603,7 @@ test('parse result checkbox controls download selection', async ({ page }) => {
 test('desktop parse separates the input from results and keeps the draft and selection when going back', async ({ page }) => {
   await installTauriMock(page, 'light');
   await page.goto('/');
-  const input = page.getByLabel('Bilibili 链接或 BV / AV');
+  const input = page.getByLabel('B站或抖音链接、BV / AV');
   await input.fill('BV1xx411c7mD');
   await page.getByRole('button', { name: '开始解析' }).click();
 
@@ -1775,7 +1775,7 @@ test('batch result selection uses the shared list checkbox', async ({ page }) =>
   await installTauriMock(page, 'light');
   await page.goto('/');
   await page.getByRole('button', { name: '多行输入', exact: true }).click();
-  await page.getByLabel('Bilibili 链接或 BV / AV').fill('BV1xx411c7mD\nBV1xx411c7mE');
+  await page.getByLabel('B站或抖音链接、BV / AV').fill('BV1xx411c7mD\nBV1xx411c7mE');
   await page.getByRole('button', { name: '开始解析' }).click();
 
   await expect(page.getByRole('checkbox', { name: '全选全部', exact: true })).toBeChecked();
@@ -2686,7 +2686,7 @@ for (const theme of ['light', 'dark'] as const) {
       }),
     );
     await page.goto('/');
-    await page.getByLabel('Bilibili 链接或 BV / AV').fill('BV1xx411c7mD');
+    await page.getByLabel('B站或抖音链接、BV / AV').fill('BV1xx411c7mD');
     await page.getByRole('button', { name: '开始解析' }).click();
     const parsed = page.locator('.source-media-row').first();
     await expect(parsed.locator('.media-author')).toContainText('城市观察工作室');
@@ -2763,7 +2763,7 @@ test('ten thousand parsed rows stay virtual while selection covers the whole sou
     };
   });
   await page.goto('/');
-  await page.getByLabel('Bilibili 链接或 BV / AV').fill('BV1xx411c7mD');
+  await page.getByLabel('B站或抖音链接、BV / AV').fill('BV1xx411c7mD');
   await page.getByRole('button', { name: '开始解析' }).click();
   const rows = page.locator('.source-media-row');
   await expect(rows.first()).toHaveAttribute('aria-setsize', '10000');
@@ -3937,7 +3937,7 @@ for (const device of ['desktop', 'phone'] as const) {
         { phone: device === 'phone' },
       );
       await page.goto('/');
-      await page.getByLabel('Bilibili 链接或 BV / AV').fill('BV1xx411c7mD');
+      await page.getByLabel('B站或抖音链接、BV / AV').fill('BV1xx411c7mD');
       await page.getByRole('button', { name: '开始解析' }).click();
       const error = page.locator('.error-details');
       await expect(error).toBeVisible();

@@ -117,6 +117,7 @@ const downloadBusy = computed(() => preparing.value || submitting.value || activ
 const selectionUnit = computed(() => {
   const kind = activeSource.value?.source.kind;
   if (kind === 'uploader') return '条投稿';
+  if (kind === 'douyin') return '个作品';
   return parse.isBatch || (kind && selectsWholePosts(kind)) ? '个视频' : '个分集';
 });
 const selectionTitle = computed(() => (parse.isBatch ? '批量链接' : (activeSource.value?.source.title ?? '')));

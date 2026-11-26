@@ -544,6 +544,7 @@ fn map_stream(
         urls,
         headers: default_stream_headers(),
         acquired_at,
+        includes_audio: false,
     }
 }
 
@@ -630,6 +631,7 @@ fn source_kind_name(kind: SourceKind) -> &'static str {
         SourceKind::Collection => "collection",
         SourceKind::Series => "series",
         SourceKind::Uploader => "uploader",
+        SourceKind::Douyin => "douyin",
         SourceKind::Unknown => "unknown",
     }
 }

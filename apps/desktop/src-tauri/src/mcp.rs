@@ -374,7 +374,7 @@ fn tools() -> Value {
     json!([
         {
             "name": "bdl_parse",
-            "description": "Read metadata and selectable part IDs from one page of a Bilibili source. Use next_page when returned to browse more. Part IDs from listed pages can be downloaded.",
+            "description": "Read metadata and selectable part IDs from one page of a Bilibili source or a single Douyin work. Use next_page when returned to browse more. Part IDs from listed pages can be downloaded.",
             "inputSchema": {
                 "type": "object", "additionalProperties": false,
                 "properties": { "input": input, "page": page }, "required": ["input"]

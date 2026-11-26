@@ -295,6 +295,7 @@ fn source_kind_name(kind: SourceKind) -> &'static str {
         SourceKind::Collection => "collection",
         SourceKind::Series => "series",
         SourceKind::Uploader => "uploader",
+        SourceKind::Douyin => "douyin",
         SourceKind::Unknown => "unknown",
     }
 }

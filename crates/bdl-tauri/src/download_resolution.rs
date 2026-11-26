@@ -4,6 +4,7 @@ use bdl_core::ids::PartId;
 use bdl_core::input::ClassifiedInput;
 use bdl_core::model::{NormalizedPart, NormalizedSourceTree, SourceKind};
 use bdl_core::planner::DownloadOptions;
+use bdl_core::resolver::douyin::DouyinResolver;
 use bdl_core::resolver::{ResolveOptions, Resolver};
 use bdl_core::resolver::{bangumi::BangumiResolver, cheese::CheeseResolver, video::VideoResolver};
 use bdl_core::{BdlError, BdlResult};
@@ -132,6 +133,7 @@ impl DownloadResolution {
                     .resolve(input, options)
                     .await
             }
+            SourceKind::Douyin => DouyinResolver::new()?.resolve(input, options).await,
             _ => Err(BdlError::Planning {
                 message: "所选条目不是可下载的视频来源。".into(),
             }),

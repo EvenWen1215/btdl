@@ -78,6 +78,11 @@ pub enum BdlError {
     #[error("fetch error: {message}")]
     Fetch { message: String },
 
+    /// A third-party source service (currently the Douyin parse endpoint)
+    /// answered with an error, throttled, or was unreachable.
+    #[error("source service error: {message}")]
+    SourceService { message: String },
+
     #[error("account error: {message}")]
     Account { message: String },
 

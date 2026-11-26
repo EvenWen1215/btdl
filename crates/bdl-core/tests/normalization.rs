@@ -55,6 +55,7 @@ fn normalized_source_tree_serializes_stable_shape() {
                                 .with_ymd_and_hms(2026, 7, 9, 8, 30, 0)
                                 .single()
                                 .expect("valid timestamp"),
+                            includes_audio: false,
                         },
                         MediaStream {
                             id: "stream_audio_best".into(),
@@ -68,6 +69,7 @@ fn normalized_source_tree_serializes_stable_shape() {
                                 .with_ymd_and_hms(2026, 7, 9, 8, 31, 0)
                                 .single()
                                 .expect("valid timestamp"),
+                            includes_audio: false,
                         },
                     ],
                     assets: vec![AssetKind::Cover.with_policy(FetchPolicy::OnDemand)],
@@ -142,7 +144,8 @@ fn normalized_source_tree_serializes_stable_shape() {
                                                     "value": "https://www.bilibili.com"
                                                 }
                                             ],
-                                            "acquired_at": "2026-07-09T08:30:00Z"
+                                            "acquired_at": "2026-07-09T08:30:00Z",
+                                            "includes_audio": false
                                         },
                                         {
                                             "id": "stream_audio_best",
@@ -154,7 +157,8 @@ fn normalized_source_tree_serializes_stable_shape() {
                                             "bandwidth": null,
                                             "urls": ["https://example.test/audio.m4s"],
                                             "headers": [],
-                                            "acquired_at": "2026-07-09T08:31:00Z"
+                                            "acquired_at": "2026-07-09T08:31:00Z",
+                                            "includes_audio": false
                                         }
                                     ],
                                     "assets": [

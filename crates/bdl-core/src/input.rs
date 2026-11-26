@@ -9,12 +9,31 @@ pub enum ClassifiedInput {
     VideoBvid(String),
     VideoAid(u64),
     ShortUrl(String),
-    Uploader { mid: u64 },
-    Favorite { raw_url: String },
-    Collection { raw_url: String },
-    Series { raw_url: String },
-    Bangumi { raw_url: String },
-    Cheese { raw_url: String },
+    Uploader {
+        mid: u64,
+    },
+    Favorite {
+        raw_url: String,
+    },
+    Collection {
+        raw_url: String,
+    },
+    Series {
+        raw_url: String,
+    },
+    Bangumi {
+        raw_url: String,
+    },
+    Cheese {
+        raw_url: String,
+    },
+    /// A single Douyin work. The numeric ID is the aweme ID shared by video and
+    /// image posts; the resolver reports which kind it turned out to be.
+    Douyin {
+        aweme_id: String,
+    },
+    /// A `v.douyin.com` share link that must be expanded before dispatch.
+    DouyinShortUrl(String),
 }
 
 impl ClassifiedInput {
@@ -22,14 +41,19 @@ impl ClassifiedInput {
         match self {
             Self::WatchLater => SourceKind::WatchLater,
             Self::VideoBvid(_) | Self::VideoAid(_) => SourceKind::Video,
-            Self::ShortUrl(_) => SourceKind::Unknown,
+            Self::ShortUrl(_) | Self::DouyinShortUrl(_) => SourceKind::Unknown,
             Self::Uploader { .. } => SourceKind::Uploader,
             Self::Favorite { .. } => SourceKind::Favorite,
             Self::Collection { .. } => SourceKind::Collection,
             Self::Series { .. } => SourceKind::Series,
             Self::Bangumi { .. } => SourceKind::Bangumi,
             Self::Cheese { .. } => SourceKind::Cheese,
+            Self::Douyin { .. } => SourceKind::Douyin,
         }
+    }
+
+    pub fn is_short_link(&self) -> bool {
+        matches!(self, Self::ShortUrl(_) | Self::DouyinShortUrl(_))
     }
 }
 
@@ -127,6 +151,10 @@ fn classify_url(raw_url: &str, url: &Url) -> Option<ClassifiedInput> {
     let host = url.host_str()?.to_ascii_lowercase();
     if is_b23_host(&host) {
         return Some(ClassifiedInput::ShortUrl(raw_url.to_string()));
+    }
+
+    if is_douyin_host(&host) {
+        return classify_douyin_url(raw_url, url, &host);
     }
 
     if !is_bilibili_host(&host) {
@@ -378,9 +406,65 @@ fn is_space_host(host: &str) -> bool {
     host == "space.bilibili.com"
 }
 
+fn is_douyin_host(host: &str) -> bool {
+    host == "douyin.com"
+        || host.ends_with(".douyin.com")
+        || host == "iesdouyin.com"
+        || host.ends_with(".iesdouyin.com")
+}
+
+/// Share links (`v.douyin.com/<code>`) resolve to a full work page after one
+/// redirect, so they keep their own variant just like `b23.tv` links.
+fn classify_douyin_url(raw_url: &str, url: &Url, host: &str) -> Option<ClassifiedInput> {
+    if host == "v.douyin.com" || host.ends_with(".v.douyin.com") {
+        return Some(ClassifiedInput::DouyinShortUrl(raw_url.to_string()));
+    }
+
+    if let Some(aweme_id) = douyin_aweme_id(url) {
+        return Some(ClassifiedInput::Douyin { aweme_id });
+    }
+
+    None
+}
+
+fn douyin_aweme_id(url: &Url) -> Option<String> {
+    let segments = path_segments(url);
+    let path_id = segments.windows(2).find_map(|pair| {
+        matches!(
+            pair[0].to_ascii_lowercase().as_str(),
+            "video" | "note" | "slides" | "share"
+        )
+        .then(|| parse_aweme_id(pair[1]))
+        .flatten()
+    });
+    if path_id.is_some() {
+        return path_id;
+    }
+
+    for key in ["modal_id", "aweme_id", "item_id", "vid"] {
+        if let Some((_, value)) = url.query_pairs().find(|(name, _)| name == key)
+            && let Some(id) = parse_aweme_id(&value)
+        {
+            return Some(id);
+        }
+    }
+
+    None
+}
+
+fn parse_aweme_id(token: &str) -> Option<String> {
+    let digits = token.trim_end_matches('/');
+    (digits.len() >= 15
+        && digits.len() <= 20
+        && digits.chars().all(|ch| ch.is_ascii_digit())
+        && !digits.starts_with('0'))
+    .then(|| digits.to_owned())
+}
+
 fn unrecognized() -> BdlError {
     BdlError::InvalidInput {
-        message: "无法识别这个输入。请粘贴 BV/AV、视频、番剧、课程、收藏夹、合集或 UP 主空间链接。"
-            .into(),
+        message:
+            "无法识别这个输入。请粘贴 BV/AV、视频、番剧、课程、收藏夹、合集、UP 主空间或抖音作品链接。"
+                .into(),
     }
 }

@@ -1,5 +1,14 @@
 export type SourceKind =
-  'video' | 'bangumi' | 'cheese' | 'favorite' | 'watch_later' | 'collection' | 'series' | 'uploader' | 'unknown';
+  | 'video'
+  | 'bangumi'
+  | 'cheese'
+  | 'favorite'
+  | 'watch_later'
+  | 'collection'
+  | 'series'
+  | 'uploader'
+  | 'douyin'
+  | 'unknown';
 
 export interface SourceSummary {
   id: string;

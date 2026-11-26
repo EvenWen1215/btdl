@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/Yuelioi/bdl?display_name=tag&sort=semver)](https://github.com/Yuelioi/bdl/releases/latest) [![License](https://img.shields.io/github/license/Yuelioi/bdl)](LICENSE)
 
-BDL 是一款本地优先的哔哩哔哩下载工具。粘贴链接，选好分集和预设，就可以把视频、音频及附件保存到本机。支持 Windows、macOS、Linux 和 Android。
+BDL 是一款本地优先的哔哩哔哩与抖音下载工具。粘贴链接，选好分集和预设，就可以把视频、音频及附件保存到本机。支持 Windows、macOS、Linux 和 Android。
 
 [下载安装](#下载) · [快速上手](#快速上手) · [桌面 AI 接入](#桌面-ai-接入) · [命令行指南](docs/CLI.md)
 
@@ -28,8 +28,9 @@ macOS 安装包使用 ad-hoc 签名，未经 Apple Developer ID 签名与公证�
 ## 快速上手
 
 1. 在「解析」粘贴 B 站链接或 BV/AV 号。支持视频、多 P、UP 主投稿、收藏夹、合集、番剧，以及已购且未加密的课程。
-2. 在结果页搜索、筛选和选集。合集较长时可以继续解析，或按需下载全部。
-3. 选择下载预设，在「传输」查看进度、暂停、续传或重试。登录后，也可以从「内容库」浏览收藏夹和订阅合集。
+2. 抖音作品也可以直接粘贴：单条作品页、分享页或 `v.douyin.com` 分享短链。详见 [抖音支持](docs/DOUYIN.md)。
+3. 在结果页搜索、筛选和选集。合集较长时可以继续解析，或按需下载全部。
+4. 选择下载预设，在「传输」查看进度、暂停、续传或重试。登录后，也可以从「内容库」浏览收藏夹和订阅合集。
 
 ### 选择要保存的内容
 
@@ -68,4 +69,4 @@ macOS 安装包使用 ad-hoc 签名，未经 Apple Developer ID 签名与公证�
 
 开发与贡献请看 [开发指南](docs/DEVELOPMENT.md) 和 [贡献指南](CONTRIBUTING.md)；安全问题请按 [安全报告说明](SECURITY.md) 私下提交。
 
-BDL 与哔哩哔哩无隶属或合作关系。请仅下载你有权保存的内容。[MIT License](LICENSE)
+BDL 与哔哩哔哩、抖音均无隶属或合作关系。请仅下载你有权保存的内容。[MIT License](LICENSE)

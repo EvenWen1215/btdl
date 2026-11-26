@@ -1,14 +1,18 @@
 # BDL Download Context
 
-BDL turns Bilibili sources into durable local media downloads while keeping task planning and existing files predictable.
+BDL turns Bilibili and Douyin sources into durable local media downloads while keeping task planning and existing files predictable.
 
 ## Language
 
 ### Content
 
 **Source**:
-A Bilibili input that BDL resolves into a browsable set of items and parts.
+A supported platform input — a Bilibili input or a Douyin work — that BDL resolves into a browsable set of items and parts.
 _Avoid_: URL, page
+
+**Douyin work**:
+A single Douyin post identified by its aweme ID. BDL resolves video works; image (图集) works are detected and rejected.
+_Avoid_: Douyin source, Douyin user
 
 **Item**:
 A titled content entry inside a source. An item contains one or more parts.

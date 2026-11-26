@@ -4,7 +4,7 @@ import type { WorkflowStep } from '../../ui/WorkflowSteps.vue';
 import { computed, onActivated, onDeactivated, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { useParseStore } from '../../stores/parse';
 import { useUiStore } from '../../stores/ui';
-import { extractBilibiliInputs } from '../../utils/bilibiliLinks';
+import { extractSourceInputs } from '../../utils/bilibiliLinks';
 import { readClipboardText } from '../../utils/clipboard';
 
 export function useParsePage() {
@@ -77,7 +77,7 @@ export function useParsePage() {
     activeStage.value = 'source';
   };
   const setSingleInput = (text: string) => {
-    const extracted = extractBilibiliInputs(text);
+    const extracted = extractSourceInputs(text);
     if (extracted.length > 1 || (extracted.length === 0 && text.trim().includes('\n'))) {
       parse.setNotice('单个视频模式一次只解析一个链接，请只粘贴一个视频或切换到批量解析。', 'warning');
       return;
@@ -103,7 +103,7 @@ export function useParsePage() {
       if (inputMode.value === 'single') {
         setSingleInput(text);
       } else {
-        const extracted = extractBilibiliInputs(text);
+        const extracted = extractSourceInputs(text);
         parse.input = extracted.length > 0 ? extracted.join('\n') : text;
         parse.clearNotice();
       }

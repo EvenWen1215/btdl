@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import type { LibraryContentSource, NormalizedItem } from '../../api/dto';
 import { useParseStore } from '../../stores/parse';
-import { bilibiliVideoUrl } from '../../utils/bilibiliLinks';
+import { sourceVideoUrl } from '../../utils/bilibiliLinks';
 import { useSourceParsing } from '../parse/useSourceParsing';
 import { selectableParts } from '../parse/parseResultTree';
 
@@ -130,6 +130,6 @@ export function useLibraryFolderDetail(
     downloadSelected,
     goToPage,
     formatDuration,
-    bilibiliVideoUrl,
+    sourceVideoUrl,
   };
 }
