@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
 });
 </script>
 <template>
-  <UiDialog v-model="open" title="发现剪贴板中的 Bilibili 链接">
+  <UiDialog v-model="open" title="发现剪贴板中的 B站 / 抖音链接">
     <p>识别到 {{ links.length }} 个链接，是否添加到解析输入框？</p>
     <p class="clipboard-preview">{{ links.join('\n') }}</p>
     <template #footer>

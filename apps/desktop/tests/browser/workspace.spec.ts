@@ -3495,7 +3495,7 @@ for (const device of ['desktop', 'android'] as const) {
       };
     });
     await page.goto('/');
-    const input = page.getByRole('textbox', { name: /^Bilibili 链接或 BV \/ AV/ });
+    const input = page.getByRole('textbox', { name: /^B站或抖音链接、BV \/ AV/ });
     await input.fill('BV17x411w7KC');
     await expect(page.getByRole('switch', { name: '返回应用时识别剪贴板链接' })).toHaveCount(0);
     if (device === 'android') {
@@ -3504,7 +3504,7 @@ for (const device of ['desktop', 'android'] as const) {
     } else await page.getByRole('button', { name: /^设置/ }).click();
     await page.getByRole('button', { name: '链接与解析', exact: true }).click();
     await page.getByRole('switch', { name: '返回应用时识别剪贴板链接' }).check();
-    const prompt = page.getByRole('dialog', { name: '发现剪贴板中的 Bilibili 链接' });
+    const prompt = page.getByRole('dialog', { name: '发现剪贴板中的 B站 / 抖音链接' });
     await expect(prompt).toBeVisible();
     await prompt.getByRole('button', { name: '添加到解析', exact: true }).click();
     await expect(input).toHaveValue('BV17x411w7KC\nhttps://www.bilibili.com/video/BV1xx411c7mD');
@@ -3615,7 +3615,7 @@ for (const device of ['desktop', 'android'] as const) {
         };
       });
       await page.goto('/');
-      await page.getByRole('textbox', { name: /^Bilibili 链接或 BV \/ AV/ }).fill('BV1kRXLBLEWR');
+      await page.getByRole('textbox', { name: /^B站或抖音链接、BV \/ AV/ }).fill('BV1kRXLBLEWR');
       await page.getByRole('button', { name: '开始解析', exact: true }).click();
       const tree = page.getByRole('region', { name: '合集分组', exact: true });
       await expect(tree).toBeVisible();
@@ -3671,7 +3671,7 @@ for (const device of ['desktop', 'android'] as const) {
       await expect(page.getByRole('dialog', { name: '下载设置', exact: true })).toBeVisible();
       if (device === 'desktop' && theme === 'light') {
         await page.goto('/?treeLarge=1');
-        await page.getByRole('textbox', { name: /^Bilibili 链接或 BV \/ AV/ }).fill('BV1kRXLBLEWR');
+        await page.getByRole('textbox', { name: /^B站或抖音链接、BV \/ AV/ }).fill('BV1kRXLBLEWR');
         await page.getByRole('button', { name: '开始解析', exact: true }).click();
         await tree.getByRole('checkbox', { name: '选择 5A', exact: true }).check();
         await tree.getByRole('button', { name: '展开 5A', exact: true }).click();

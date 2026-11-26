@@ -125,8 +125,8 @@ function toggleCard(event: MouseEvent, id?: string) {
           menuOpen = false;
         "
         >{{ menuEntry.selected ? '取消选择' : '选择此视频' }}</UiButton
-      ><ExternalLinkButton v-if="menuEntry.url" :href="menuEntry.url" label="在 Bilibili 打开视频"
-        >在 Bilibili 打开视频</ExternalLinkButton
+      ><ExternalLinkButton v-if="menuEntry.url" :href="menuEntry.url" label="在网页打开视频"
+        >在网页打开视频</ExternalLinkButton
       ></template
     >
   </MobileSheet>
