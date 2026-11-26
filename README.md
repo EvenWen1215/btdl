@@ -1,4 +1,4 @@
-# BDL · Bilibili Download Lab
+# BDL · Bilibili & Tiktok Download Lab
 
 [![Release](https://img.shields.io/github/v/release/Yuelioi/bdl?display_name=tag&sort=semver)](https://github.com/Yuelioi/bdl/releases/latest) [![License](https://img.shields.io/github/license/Yuelioi/bdl)](LICENSE)
 
